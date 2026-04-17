@@ -5,16 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Timetable Generator</title>
 
-  <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Custom CSS -->
-  <link rel="stylesheet" href="./css/style.css">
-
-  <!-- html2canvas CDN -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
-  <!-- Font -->
+  <link rel="stylesheet" href="./css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
 
@@ -22,8 +16,7 @@
 
   <div class="max-w-6xl mx-auto p-6">
 
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex justify-between items-center mb-4">
       <h1 class="text-2xl font-bold text-blue-600">Timetable Generator</h1>
 
       <div class="flex gap-2">
@@ -32,8 +25,14 @@
       </div>
     </div>
 
-    <!-- Timetable Grid -->
-    <div id="timetable" class="grid-container shadow-md rounded-lg overflow-hidden bg-white"></div>
+    <!-- SLOT CREATOR -->
+    <div class="mt-4 flex gap-2 items-center">
+      <input id="startTime" type="time" class="border p-2 rounded" />
+      <input id="endTime" type="time" class="border p-2 rounded" />
+      <button id="addSlotBtn" class="btn-primary">Add Time Slot</button>
+    </div>
+
+    <div id="timetable" class="grid-container shadow-md rounded-lg overflow-hidden bg-white mt-4"></div>
 
   </div>
 
