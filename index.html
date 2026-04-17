@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Timetable Generator</title>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="./css/style.css">
+
+  <!-- html2canvas CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+  <!-- Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body class="bg-white text-gray-800 font-[Inter]">
+
+  <div class="max-w-6xl mx-auto p-6">
+
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold text-blue-600">Timetable Generator</h1>
+
+      <div class="flex gap-2">
+        <button id="exportBtn" class="btn-primary">Export PNG</button>
+        <button id="clearBtn" class="btn-secondary">Clear</button>
+      </div>
+    </div>
+
+    <!-- Timetable Grid -->
+    <div id="timetable" class="grid-container shadow-md rounded-lg overflow-hidden bg-white"></div>
+
+  </div>
+
+  <script src="./js/script.js"></script>
+</body>
+</html>
