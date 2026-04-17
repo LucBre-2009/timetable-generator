@@ -1,0 +1,63 @@
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+/* Buttons */
+.btn-primary {
+  background: #2563eb;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.btn-primary:hover {
+  background: #1d4ed8;
+}
+
+.btn-secondary {
+  background: #e5e7eb;
+  color: #111827;
+  padding: 8px 14px;
+  border-radius: 8px;
+}
+
+.btn-secondary:hover {
+  background: #d1d5db;
+}
+
+/* Grid */
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  border: 1px solid #e5e7eb;
+}
+
+/* Cell */
+.cell {
+  border: 1px solid #e5e7eb;
+  min-height: 90px;
+  padding: 6px;
+  position: relative;
+  background: white;
+}
+
+.cell:hover {
+  background: #f9fafb;
+}
+
+/* Subject block */
+.subject {
+  width: 100%;
+  height: 100%;
+  border-radius: 6px;
+  padding: 6px;
+  color: white;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
