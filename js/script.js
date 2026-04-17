@@ -3,42 +3,47 @@ const timetable = document.getElementById("timetable");
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 
 let timeSlots = JSON.parse(localStorage.getItem("slots")) || [];
-let state = JSON.parse(localStorage.getItem("events")) || [];
+let state = JSON.parse(localStorage.getItem("timetable")) || {};
 
-let undoStack = [];
-let redoStack = [];
+let lang = localStorage.getItem("lang") || "en";
 
-let dragItem = null;
+let currentEdit = null;
+
+// ---------------- TEXT ----------------
+const T = {
+  en: {
+    title: "Timetable Generator",
+    addSlot: "Add Slot",
+    subject: "Subject",
+    save: "Save",
+    cancel: "Cancel",
+    clear: "Clear everything",
+    emptySlot: "Subject name?"
+  },
+  de: {
+    title: "Stundenplan Generator",
+    addSlot: "Zeit hinzufügen",
+    subject: "Fach",
+    save: "Speichern",
+    cancel: "Abbrechen",
+    clear: "Alles löschen",
+    emptySlot: "Fachname?"
+  }
+};
 
 // ---------------- SAVE ----------------
 function save() {
   localStorage.setItem("slots", JSON.stringify(timeSlots));
-  localStorage.setItem("events", JSON.stringify(state));
+  localStorage.setItem("timetable", JSON.stringify(state));
+  localStorage.setItem("lang", lang);
 }
 
-// ---------------- HISTORY ----------------
-function pushHistory() {
-  undoStack.push(JSON.stringify(state));
-  if (undoStack.length > 50) undoStack.shift();
-  redoStack = [];
-}
-
-function undo() {
-  if (!undoStack.length) return;
-
-  redoStack.push(JSON.stringify(state));
-  state = JSON.parse(undoStack.pop());
-  save();
-  createGrid();
-}
-
-function redo() {
-  if (!redoStack.length) return;
-
-  undoStack.push(JSON.stringify(state));
-  state = JSON.parse(redoStack.pop());
-  save();
-  createGrid();
+// ---------------- LANGUAGE APPLY ----------------
+function applyLang() {
+  document.getElementById("title").innerText = T[lang].title;
+  document.getElementById("addSlotBtn").innerText = T[lang].addSlot;
+  document.getElementById("saveBtn").innerText = T[lang].save;
+  document.getElementById("cancelBtn").innerText = T[lang].cancel;
 }
 
 // ---------------- GRID ----------------
@@ -52,27 +57,20 @@ function createGrid() {
     timetable.appendChild(header(slot));
 
     DAYS.forEach(day => {
+      const key = `${day}-${slot}`;
+
       const cell = document.createElement("div");
       cell.className = "cell";
 
-      const events = getEvents(day, slot);
+      cell.onclick = () => openModal(key);
 
-      cell.ondragover = (e) => {
-        e.preventDefault();
-        cell.classList.add("bg-blue-50");
-      };
-
-      cell.ondragleave = () => {
-        cell.classList.remove("bg-blue-50");
-      };
-
-      cell.ondrop = (e) => handleDrop(e, day, slot);
-
-      cell.onclick = () => addEvent(day, slot);
-
-      events.forEach(ev => {
-        cell.appendChild(renderEvent(ev));
-      });
+      if (state[key]) {
+        const el = document.createElement("div");
+        el.className = "subject";
+        el.style.background = state[key].color;
+        el.innerText = state[key].name;
+        cell.appendChild(el);
+      }
 
       timetable.appendChild(cell);
     });
@@ -87,103 +85,90 @@ function header(text) {
   return div;
 }
 
-// ---------------- GET EVENTS ----------------
-function getEvents(day, slot) {
-  return state.filter(e => e.day === day && e.slot === slot);
+// ---------------- MODAL ----------------
+function openModal(key) {
+  currentEdit = key;
+
+  const modal = document.getElementById("modal");
+  modal.classList.remove("hidden");
+
+  document.getElementById("subjectName").value =
+    state[key]?.name || "";
+
+  document.getElementById("colorPicker").value =
+    state[key]?.color || "#3b82f6";
+
+  document.getElementById("modalTitle").innerText = T[lang].subject;
 }
 
-// ---------------- RENDER EVENT ----------------
-function renderEvent(ev) {
-  const div = document.createElement("div");
-
-  div.className = "subject";
-  div.style.background = ev.color;
-  div.innerText = ev.name;
-
-  div.draggable = true;
-
-  // DRAG START
-  div.ondragstart = (e) => {
-    dragItem = ev;
-    e.dataTransfer.setData("text/plain", JSON.stringify(ev));
-  };
-
-  // TOUCH SUPPORT (basic mobile drag)
-  div.ontouchstart = () => {
-    dragItem = ev;
-  };
-
-  // DOUBLE CLICK DUPLICATE
-  div.ondblclick = () => {
-    pushHistory();
-
-    state.push({
-      ...ev,
-      id: crypto.randomUUID()
-    });
-
-    save();
-    createGrid();
-  };
-
-  return div;
+function closeModal() {
+  document.getElementById("modal").classList.add("hidden");
+  currentEdit = null;
 }
 
-// ---------------- DROP ----------------
-function handleDrop(e, day, slot) {
-  e.preventDefault();
+// ---------------- SAVE SUBJECT ----------------
+document.getElementById("saveBtn").onclick = () => {
+  const name = document.getElementById("subjectName").value;
+  const color = document.getElementById("colorPicker").value;
 
-  const data = e.dataTransfer.getData("text/plain");
-  let ev = dragItem;
-
-  if (!ev && data) {
-    ev = JSON.parse(data);
-  }
-
-  if (!ev) return;
-
-  pushHistory();
-
-  // remove old
-  state = state.filter(e => e.id !== ev.id);
-
-  // add new position
-  state.push({
-    ...ev,
-    day,
-    slot
-  });
-
-  dragItem = null;
-
-  save();
-  createGrid();
-}
-
-// ---------------- ADD EVENT ----------------
-function addEvent(day, slot) {
-  const name = prompt("Subject name?");
   if (!name) return;
 
-  const color = prompt("Color hex", "#3b82f6");
-
-  pushHistory();
-
-  state.push({
-    id: crypto.randomUUID(),
-    day,
-    slot,
-    name,
-    color
-  });
+  state[currentEdit] = { name, color };
 
   save();
   createGrid();
-}
+  closeModal();
+};
+
+// ---------------- CANCEL ----------------
+document.getElementById("cancelBtn").onclick = closeModal;
+
+// ---------------- SLOT ADD ----------------
+document.getElementById("addSlotBtn").onclick = () => {
+  const start = document.getElementById("startTime").value;
+  const end = document.getElementById("endTime").value;
+
+  if (!start || !end) return;
+
+  const slot = `${start}-${end}`;
+
+  if (!timeSlots.includes(slot)) {
+    timeSlots.push(slot);
+    timeSlots.sort((a,b)=>a.split("-")[0].localeCompare(b.split("-")[0]));
+    save();
+    createGrid();
+  }
+};
+
+// ---------------- LANGUAGE SWITCH FIX ----------------
+document.getElementById("langSelect").onchange = (e) => {
+  lang = e.target.value;
+  save();
+  applyLang();
+  createGrid(); // IMPORTANT FIX
+};
+
+// ---------------- EXPORT ----------------
+document.getElementById("exportBtn").onclick = () => {
+  html2canvas(timetable).then(canvas => {
+    const a = document.createElement("a");
+    a.download = "timetable.png";
+    a.href = canvas.toDataURL();
+    a.click();
+  });
+};
+
+// ---------------- CLEAR ----------------
+document.getElementById("clearBtn").onclick = () => {
+  if (!confirm(T[lang].clear)) return;
+
+  state = {};
+  timeSlots = [];
+
+  save();
+  createGrid();
+};
 
 // ---------------- INIT ----------------
+applyLang();
 createGrid();
-
-// expose undo/redo for buttons if needed
-window.undo = undo;
-window.redo = redo;
