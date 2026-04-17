@@ -1,31 +1,43 @@
 const timetable = document.getElementById("timetable");
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
-const HOURS = ["08", "09", "10", "11", "12", "13"];
+
+// STATE
+let timeSlots = JSON.parse(localStorage.getItem("slots")) || [
+  "07:50-08:35",
+  "08:40-09:25"
+];
 
 let state = JSON.parse(localStorage.getItem("timetable")) || {};
 
-// Build grid
+// SAVE
+function save() {
+  localStorage.setItem("slots", JSON.stringify(timeSlots));
+  localStorage.setItem("timetable", JSON.stringify(state));
+}
+
+// GRID
 function createGrid() {
   timetable.innerHTML = "";
 
-  // header row
-  timetable.appendChild(createHeaderCell("Time/Day"));
-  DAYS.forEach(day => timetable.appendChild(createHeaderCell(day)));
+  timetable.appendChild(header("Time / Day"));
 
-  HOURS.forEach(hour => {
-    timetable.appendChild(createHeaderCell(hour + ":00"));
+  DAYS.forEach(d => timetable.appendChild(header(d)));
+
+  timeSlots.forEach(slot => {
+    timetable.appendChild(header(slot));
 
     DAYS.forEach(day => {
-      const key = `${day}-${hour}`;
+      const key = `${day}-${slot}`;
+
       const cell = document.createElement("div");
       cell.className = "cell";
 
       if (state[key]) {
-        const subject = createSubject(state[key], key);
-        cell.appendChild(subject);
+        const el = subject(state[key], key);
+        cell.appendChild(el);
       } else {
-        cell.addEventListener("click", () => addSubject(key));
+        cell.onclick = () => addSubject(key);
       }
 
       timetable.appendChild(cell);
@@ -33,14 +45,16 @@ function createGrid() {
   });
 }
 
-function createHeaderCell(text) {
+// HEADER
+function header(text) {
   const div = document.createElement("div");
   div.className = "cell font-bold bg-gray-50 flex items-center justify-center";
   div.innerText = text;
   return div;
 }
 
-function createSubject(data, key) {
+// SUBJECT
+function subject(data, key) {
   const div = document.createElement("div");
   div.className = "subject";
   div.style.background = data.color || "#3b82f6";
@@ -51,17 +65,20 @@ function createSubject(data, key) {
   return div;
 }
 
+// ADD SUBJECT
 function addSubject(key) {
   const name = prompt("Subject name?");
   if (!name) return;
 
-  const color = prompt("Color (hex)", "#3b82f6");
+  const color = prompt("Color hex", "#3b82f6");
 
   state[key] = { name, color };
+
   save();
   createGrid();
 }
 
+// EDIT SUBJECT
 function editSubject(key) {
   const current = state[key];
 
@@ -71,31 +88,52 @@ function editSubject(key) {
   const color = prompt("Edit color", current.color);
 
   state[key] = { name, color };
+
   save();
   createGrid();
 }
 
-function save() {
-  localStorage.setItem("timetable", JSON.stringify(state));
-}
+// ADD SLOT
+document.getElementById("addSlotBtn").onclick = () => {
+  const start = document.getElementById("startTime").value;
+  const end = document.getElementById("endTime").value;
 
-// Export as image
+  if (!start || !end) return alert("Select start & end time");
+
+  const slot = `${start}-${end}`;
+
+  if (timeSlots.includes(slot)) return alert("Slot exists");
+
+  timeSlots.push(slot);
+
+  timeSlots.sort((a, b) =>
+    a.split("-")[0].localeCompare(b.split("-")[0])
+  );
+
+  save();
+  createGrid();
+};
+
+// EXPORT
 document.getElementById("exportBtn").onclick = () => {
   html2canvas(timetable).then(canvas => {
     const link = document.createElement("a");
     link.download = "timetable.png";
-    link.href = canvas.toDataURL();
+    link.href = canvas.toDataURL("image/png");
     link.click();
   });
 };
 
-// Clear
+// CLEAR
 document.getElementById("clearBtn").onclick = () => {
-  if (!confirm("Clear timetable?")) return;
+  if (!confirm("Clear everything?")) return;
+
   state = {};
+  timeSlots = ["07:50-08:35", "08:40-09:25"];
+
   save();
   createGrid();
 };
 
-// init
+// INIT
 createGrid();
