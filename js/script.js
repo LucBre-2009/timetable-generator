@@ -2,50 +2,84 @@ const timetable = document.getElementById("timetable");
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 
-// STATE
-let timeSlots = JSON.parse(localStorage.getItem("slots")) || [
-  "07:50-08:35",
-  "08:40-09:25"
-];
+let timeSlots = JSON.parse(localStorage.getItem("slots")) || [];
+let state = JSON.parse(localStorage.getItem("events")) || [];
 
-let state = JSON.parse(localStorage.getItem("timetable")) || {};
+let undoStack = [];
+let redoStack = [];
 
-// SAVE
+let dragItem = null;
+
+// ---------------- SAVE ----------------
 function save() {
   localStorage.setItem("slots", JSON.stringify(timeSlots));
-  localStorage.setItem("timetable", JSON.stringify(state));
+  localStorage.setItem("events", JSON.stringify(state));
 }
 
-// GRID
+// ---------------- HISTORY ----------------
+function pushHistory() {
+  undoStack.push(JSON.stringify(state));
+  if (undoStack.length > 50) undoStack.shift();
+  redoStack = [];
+}
+
+function undo() {
+  if (!undoStack.length) return;
+
+  redoStack.push(JSON.stringify(state));
+  state = JSON.parse(undoStack.pop());
+  save();
+  createGrid();
+}
+
+function redo() {
+  if (!redoStack.length) return;
+
+  undoStack.push(JSON.stringify(state));
+  state = JSON.parse(redoStack.pop());
+  save();
+  createGrid();
+}
+
+// ---------------- GRID ----------------
 function createGrid() {
   timetable.innerHTML = "";
 
   timetable.appendChild(header("Time / Day"));
-
   DAYS.forEach(d => timetable.appendChild(header(d)));
 
   timeSlots.forEach(slot => {
     timetable.appendChild(header(slot));
 
     DAYS.forEach(day => {
-      const key = `${day}-${slot}`;
-
       const cell = document.createElement("div");
       cell.className = "cell";
 
-      if (state[key]) {
-        const el = subject(state[key], key);
-        cell.appendChild(el);
-      } else {
-        cell.onclick = () => addSubject(key);
-      }
+      const events = getEvents(day, slot);
+
+      cell.ondragover = (e) => {
+        e.preventDefault();
+        cell.classList.add("bg-blue-50");
+      };
+
+      cell.ondragleave = () => {
+        cell.classList.remove("bg-blue-50");
+      };
+
+      cell.ondrop = (e) => handleDrop(e, day, slot);
+
+      cell.onclick = () => addEvent(day, slot);
+
+      events.forEach(ev => {
+        cell.appendChild(renderEvent(ev));
+      });
 
       timetable.appendChild(cell);
     });
   });
 }
 
-// HEADER
+// ---------------- HEADER ----------------
 function header(text) {
   const div = document.createElement("div");
   div.className = "cell font-bold bg-gray-50 flex items-center justify-center";
@@ -53,87 +87,103 @@ function header(text) {
   return div;
 }
 
-// SUBJECT
-function subject(data, key) {
-  const div = document.createElement("div");
-  div.className = "subject";
-  div.style.background = data.color || "#3b82f6";
-  div.innerText = data.name;
+// ---------------- GET EVENTS ----------------
+function getEvents(day, slot) {
+  return state.filter(e => e.day === day && e.slot === slot);
+}
 
-  div.onclick = () => editSubject(key);
+// ---------------- RENDER EVENT ----------------
+function renderEvent(ev) {
+  const div = document.createElement("div");
+
+  div.className = "subject";
+  div.style.background = ev.color;
+  div.innerText = ev.name;
+
+  div.draggable = true;
+
+  // DRAG START
+  div.ondragstart = (e) => {
+    dragItem = ev;
+    e.dataTransfer.setData("text/plain", JSON.stringify(ev));
+  };
+
+  // TOUCH SUPPORT (basic mobile drag)
+  div.ontouchstart = () => {
+    dragItem = ev;
+  };
+
+  // DOUBLE CLICK DUPLICATE
+  div.ondblclick = () => {
+    pushHistory();
+
+    state.push({
+      ...ev,
+      id: crypto.randomUUID()
+    });
+
+    save();
+    createGrid();
+  };
 
   return div;
 }
 
-// ADD SUBJECT
-function addSubject(key) {
+// ---------------- DROP ----------------
+function handleDrop(e, day, slot) {
+  e.preventDefault();
+
+  const data = e.dataTransfer.getData("text/plain");
+  let ev = dragItem;
+
+  if (!ev && data) {
+    ev = JSON.parse(data);
+  }
+
+  if (!ev) return;
+
+  pushHistory();
+
+  // remove old
+  state = state.filter(e => e.id !== ev.id);
+
+  // add new position
+  state.push({
+    ...ev,
+    day,
+    slot
+  });
+
+  dragItem = null;
+
+  save();
+  createGrid();
+}
+
+// ---------------- ADD EVENT ----------------
+function addEvent(day, slot) {
   const name = prompt("Subject name?");
   if (!name) return;
 
   const color = prompt("Color hex", "#3b82f6");
 
-  state[key] = { name, color };
+  pushHistory();
 
-  save();
-  createGrid();
-}
-
-// EDIT SUBJECT
-function editSubject(key) {
-  const current = state[key];
-
-  const name = prompt("Edit name", current.name);
-  if (!name) return;
-
-  const color = prompt("Edit color", current.color);
-
-  state[key] = { name, color };
-
-  save();
-  createGrid();
-}
-
-// ADD SLOT
-document.getElementById("addSlotBtn").onclick = () => {
-  const start = document.getElementById("startTime").value;
-  const end = document.getElementById("endTime").value;
-
-  if (!start || !end) return alert("Select start & end time");
-
-  const slot = `${start}-${end}`;
-
-  if (timeSlots.includes(slot)) return alert("Slot exists");
-
-  timeSlots.push(slot);
-
-  timeSlots.sort((a, b) =>
-    a.split("-")[0].localeCompare(b.split("-")[0])
-  );
-
-  save();
-  createGrid();
-};
-
-// EXPORT
-document.getElementById("exportBtn").onclick = () => {
-  html2canvas(timetable).then(canvas => {
-    const link = document.createElement("a");
-    link.download = "timetable.png";
-    link.href = canvas.toDataURL("image/png");
-    link.click();
+  state.push({
+    id: crypto.randomUUID(),
+    day,
+    slot,
+    name,
+    color
   });
-};
-
-// CLEAR
-document.getElementById("clearBtn").onclick = () => {
-  if (!confirm("Clear everything?")) return;
-
-  state = {};
-  timeSlots = ["07:50-08:35", "08:40-09:25"];
 
   save();
   createGrid();
-};
+}
 
-// INIT
+// ---------------- INIT ----------------
 createGrid();
+
+// expose undo/redo for buttons if needed
+window.undo = undo;
+window.redo = redo;
