@@ -31,5 +31,8 @@ A simple, responsive web app to create and customize weekly timetables. Built fo
 2. Enter subject name and choose a color
 3. Click an existing subject to edit it
 4. Use **Export PNG** to download your timetable image
-5. Data is automatically saved in your browser
+
+---
+
+## Made by LucBre
 
