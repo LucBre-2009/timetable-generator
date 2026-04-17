@@ -9,9 +9,7 @@ body {
   border-radius: 8px;
 }
 
-.btn-primary:hover {
-  background: #1d4ed8;
-}
+.btn-primary:hover { background: #1d4ed8; }
 
 .btn-secondary {
   background: #e5e7eb;
@@ -20,9 +18,7 @@ body {
   border-radius: 8px;
 }
 
-.btn-secondary:hover {
-  background: #d1d5db;
-}
+.btn-secondary:hover { background: #d1d5db; }
 
 .grid-container {
   display: grid;
@@ -34,12 +30,9 @@ body {
   border: 1px solid #e5e7eb;
   min-height: 90px;
   padding: 6px;
-  background: white;
 }
 
-.cell:hover {
-  background: #f9fafb;
-}
+.cell:hover { background: #f9fafb; }
 
 .subject {
   width: 100%;
